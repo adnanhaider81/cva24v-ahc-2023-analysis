@@ -1,7 +1,7 @@
 # Genomic characterization of the Coxsackievirus A24 variant in the Acute Hemorrhagic Conjunctivitis outbreak 2023 in Islamabad, Pakistan through metagenomic next generation sequencing
 
 Reproducible code and workflow that mirror the analysis in the manuscript.  
-Primary paper DOI: 10.1016/j.jviromet.2025.115213
+Primary paper DOI: [10.1016/j.jviromet.2025.115213](https://doi.org/10.1016/j.jviromet.2025.115213)
 
 ## Program summary
 End to end analysis of CV-A24v using metagenomic NGS for outbreak investigation. Steps match the study design and are fully scripted so a reviewer can reproduce the workflow.
