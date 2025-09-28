@@ -1,0 +1,32 @@
+cff-version: 1.2.0
+message: Please cite this code and the associated paper.
+title: CV-A24v AHC 2023 analysis
+authors:
+  - family-names: Haider
+    given-names: Syed Adnan
+version: 1.0.0
+date-released: 2025-09-29
+preferred-citation:
+  type: article
+  title: Genomic characterization of the Coxsackievirus A24 variant in the Acute Hemorrhagic Conjunctivitis outbreak 2023 in Islamabad, Pakistan through metagenomic next generation sequencing
+  authors:
+    - family-names: Haider
+      given-names: Syed Adnan
+    - family-names: Jamal
+      given-names: Zunera
+    - family-names: Ammar
+      given-names: Muhammad
+    - family-names: Hakim
+      given-names: Rabia
+    - family-names: Afrough
+      given-names: Babak
+    - family-names: Kreku
+      given-names: Anila
+    - family-names: Inamdar
+      given-names: Leena
+    - family-names: Salman
+      given-names: Muhammad
+    - family-names: Umair
+      given-names: Massab
+  year: 2025
+  doi: 10.1016/j.jviromet.2025.115213
