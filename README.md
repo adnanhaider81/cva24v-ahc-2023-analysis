@@ -139,7 +139,7 @@ kaiju:
 
 ## How to cite
 - Paper: Haider SA, Jamal Z, Ammar M, Hakim R, Afrough B, Kreku A, Inamdar L, Salman M, Umair M. Genomic characterization of the Coxsackievirus A24 variant in the Acute Hemorrhagic Conjunctivitis outbreak 2023 in Islamabad, Pakistan through metagenomic next generation sequencing. Journal of Virological Methods. 2025. https://doi.org/10.1016/j.jviromet.2025.115213
-- Software: Haider SA. CV-A24v AHC 2023 Pakistan analysis. Version 1.0.0. GitHub repository. Include commit hash when available.
+- Software: Haider SA. CV-A24v AHC 2023 Pakistan analysis. Version 2.0.0. GitHub repository.
 
 ## References
 - Andrews S. 2010. FastQC. Babraham Bioinformatics.
