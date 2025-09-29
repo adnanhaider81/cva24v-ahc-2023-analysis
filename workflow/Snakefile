@@ -1,23 +1,50 @@
-# Snakemake pipeline for CV-A24v AHC 2023 analysis
-# Requires NCBI_EMAIL env var for Entrez fetch steps
+# CV-A24v AHC 2023 Pakistan - Snakemake pipeline
 
 import yaml, os
 cfg = yaml.safe_load(open("config/config.yaml"))
 
-SAMPLES = [x.get("sample","AHC_001") for x in cfg.get("pairs", [{"sample":"AHC_001","r1":"data-private/AHC_001_R1.fastq.gz","r2":"data-private/AHC_001_R2.fastq.gz"}])]
-META = {x.get("sample","AHC_001"): x for x in cfg.get("pairs", [])}
+SAMPLES = [x.get("sample","AHC_2023_ISB_01") for x in cfg.get("pairs", [{"sample":"AHC_2023_ISB_01","r1":"data-private/AHC_2023_ISB_01_R1.fastq.gz","r2":"data-private/AHC_2023_ISB_01_R2.fastq.gz"}])]
+META = {x.get("sample","AHC_2023_ISB_01"): x for x in cfg.get("pairs", [])}
 if not META:
-    META = {"AHC_001": {"r1":"data-private/AHC_001_R1.fastq.gz","r2":"data-private/AHC_001_R2.fastq.gz"}}
-THREADS = cfg["params"]["threads"]
+    META = {"AHC_2023_ISB_01": {"r1":"data-private/AHC_2023_ISB_01_R1.fastq.gz","r2":"data-private/AHC_2023_ISB_01_R2.fastq.gz"}}
+
+THREADS =  cfg.get("phylogeny",{}).get("threads", 4)
+MINLEN =   cfg.get("discovery",{}).get("min_len_contig", 300)
+MIN_DP =   cfg.get("phylogeny",{}).get("min_depth_consensus", 10)
+WG_MODEL = cfg.get("phylogeny",{}).get("wg_model", "GTR+G+I")
+VP1_MODEL= cfg.get("phylogeny",{}).get("vp1_model", "K2P+I")
+BOOT =     cfg.get("phylogeny",{}).get("bootstrap", 1000)
+MF =       cfg.get("phylogeny",{}).get("use_model_finder", False)
+BLAST_REMOTE = cfg.get("discovery",{}).get("blast_remote", True)
+
+KRAKEN_EN = cfg.get("kraken2", {}).get("enable", True)
+KRAKEN_DB = cfg.get("kraken2", {}).get("db", "/path/to/kraken2-db")
+KAIJU_EN   = cfg.get("kaiju", {}).get("enable", True)
+KAIJU_FMI  = cfg.get("kaiju", {}).get("db_fmi", "/path/to/kaiju_db.fmi")
+KAIJU_NODES= cfg.get("kaiju", {}).get("nodes", "/path/to/nodes.dmp")
+KAIJU_NAMES= cfg.get("kaiju", {}).get("names", "/path/to/names.dmp")
 
 rule all:
     input:
+        expand("results/discovery/{s}_taxonomy_summary.tsv", s=SAMPLES),
+        expand("results/discovery/{s}_selected_targets.yaml", s=SAMPLES),
         expand("results/consensus/{s}.fa", s=SAMPLES),
         "results/consensus/all_consensus.fasta",
         "results/aln/wg_alignment.fasta",
-        "results/aln/vp1_alignment.fasta",
         "results/iqtree/wg.treefile",
-        "results/iqtree/vp1.treefile"
+        "results/vp1/vp1_alignment.fasta",
+        "results/iqtree/vp1.treefile",
+        "results/mutations/aa_changes.tsv"
+
+rule fastqc:
+    input:
+        r1=lambda w: META[w.s]["r1"],
+        r2=lambda w: META[w.s]["r2"]
+    output:
+        "work/{s}.R1.fastqc.html",
+        "work/{s}.R2.fastqc.html"
+    shell:
+        "fastqc -o work {input.r1} {input.r2}"
 
 rule trim:
     input:
@@ -27,71 +54,149 @@ rule trim:
         r1="work/{s}.R1.trim.fastq.gz",
         r2="work/{s}.R2.trim.fastq.gz"
     params:
-        adapters=cfg["params"]["trim_adapters"]
-    threads: THREADS
+        adapters="env/TruSeq3-PE.fa"
+    threads: 4
     shell:
         "trimmomatic PE -threads {threads} {input.r1} {input.r2} "
         "{output.r1} /dev/null {output.r2} /dev/null "
-        "ILLUMINACLIP:{params.adapters}:2:30:10 SLIDINGWINDOW:4:20 MINLEN:50"
+        "ILLUMINACLIP:{params.adapters}:2:30:10 LEADING:3 TRAILING:3 SLIDINGWINDOW:4:30 MINLEN:50"
 
-rule assemble_spades:
+rule spades:
     input:
         r1="work/{s}.R1.trim.fastq.gz",
         r2="work/{s}.R2.trim.fastq.gz"
     output:
         contigs="results/spades/{s}/contigs.fasta"
-    threads: THREADS
+    threads: 4
     shell:
-        "spades.py -1 {input.r1} -2 {input.r2} -o results/spades/{wildcards.s}"
+        "mkdir -p results/spades/{wildcards.s} && "
+        "spades.py -1 {input.r1} -2 {input.r2} -t {threads} -o results/spades/{wildcards.s} > logs/{wildcards.s}.spades.log 2>&1 && "
+        "test -f results/spades/{wildcards.s}/contigs.fasta || touch {output.contigs}"
 
 rule contig_qc:
     input:
+        "results/spades/{s}/contigs.fasta"
+    output:
+        "results/spades/{s}/contigs.qc.tsv"
+    params:
+        minlen=MINLEN
+    shell:
+        "python analysis/scripts/contig_qc.py --in {input} --min_len {params.minlen} --out_tsv {output}"
+
+rule kraken2_reads:
+    input:
+        r1="work/{s}.R1.trim.fastq.gz",
+        r2="work/{s}.R2.trim.fastq.gz"
+    output:
+        rep="results/discovery/kraken2/{s}.reads.report.txt",
+        out="results/discovery/kraken2/{s}.reads.kraken.tsv"
+    threads: 4
+    shell:
+        "if {int(KRAKEN_EN)}; then mkdir -p results/discovery/kraken2 && "
+        "kraken2 --db {KRAKEN_DB} --threads {threads} --paired {input.r1} {input.r2} "
+        "--report {output.rep} --output {output.out}; "
+        "else mkdir -p results/discovery/kraken2 && echo 'disabled' > {output.rep} && echo '' > {output.out}; fi"
+
+rule kraken2_contigs:
+    input:
         contigs="results/spades/{s}/contigs.fasta"
     output:
-        tsv="results/spades/{s}/contigs.qc.tsv"
+        rep="results/discovery/kraken2/{s}.contigs.report.txt",
+        out="results/discovery/kraken2/{s}.contigs.kraken.tsv"
+    threads: 4
     shell:
-        "python analysis/scripts/contig_qc.py --in {input.contigs} --out_tsv {output.tsv}"
+        "if {int(KRAKEN_EN)}; then mkdir -p results/discovery/kraken2 && "
+        "kraken2 --db {KRAKEN_DB} --threads {threads} {input.contigs} "
+        "--report {output.rep} --output {output.out}; "
+        "else mkdir -p results/discovery/kraken2 && echo 'disabled' > {output.rep} && echo '' > {output.out}; fi"
 
-rule fetch_refs:
+rule kaiju_contigs:
+    input:
+        contigs="results/spades/{s}/contigs.fasta"
     output:
-        "results/refs/context.fasta"
+        out="results/discovery/kaiju/{s}.kaiju.out",
+        rep="results/discovery/kaiju/{s}.kaiju.report.tsv"
+    threads: 4
     shell:
-        "printf '%s\n' " + " ".join(cfg["context_accessions"]) + " | tr ' ' '\\n' > config/context.txt && "
-        "python analysis/scripts/fetch_genbank.py --acc config/context.txt --out_fasta {output}"
+        "if {int(KAIJU_EN)}; then mkdir -p results/discovery/kaiju && "
+        "kaiju -t {KAIJU_NODES} -f {KAIJU_FMI} -i {input.contigs} -z {threads} -a greedy -e 5 -E 0.0001 -s 65 -o {output.out} && "
+        "kaiju2table -t {KAIJU_NODES} -n {KAIJU_NAMES} -r species -o {output.rep} {output.out}; "
+        "else mkdir -p results/discovery/kaiju && echo 'disabled' > {output.out} && echo '' > {output.rep}; fi"
+
+rule blast_top_hits:
+    input:
+        contigs="results/spades/{s}/contigs.fasta"
+    output:
+        "results/discovery/{s}.contig_top_hits.tsv"
+    params:
+        remote="--remote" if BLAST_REMOTE else "",
+        db="nt"
+    shell:
+        "mkdir -p results/discovery && "
+        "python analysis/scripts/blast_top_hits.py --contigs {input.contigs} --out_tsv {output} {params.remote} --db {params.db}"
+
+rule taxonomy_summary:
+    input:
+        k2r="results/discovery/kraken2/{s}.reads.report.txt",
+        k2c="results/discovery/kraken2/{s}.contigs.report.txt",
+        kj="results/discovery/kaiju/{s}.kaiju.report.tsv"
+    output:
+        tsv="results/discovery/{s}_taxonomy_summary.tsv",
+        targ="results/discovery/{s}_selected_targets.yaml"
+    shell:
+        "python analysis/scripts/taxonomy_summary.py --k2_reads {input.k2r} --k2_contigs {input.k2c} --kaiju {input.kj} --out_tsv {output.tsv} --out_targets {output.targ}"
+
+rule select_reference:
+    input:
+        blast="results/discovery/{s}.contig_top_hits.tsv"
+    output:
+        acc="results/refs/{s}.selected_ref.txt"
+    params:
+        fallback=cfg.get("reference",{}).get("fallback_acc","D90457.1")
+    shell:
+        "mkdir -p results/refs && python analysis/scripts/select_reference.py --blast_tsv {input.blast} --fallback {params.fallback} --out_acc {output.acc}"
+
+rule fetch_reference_and_gb:
+    input:
+        acc="results/refs/{s}.selected_ref.txt"
+    output:
+        fa="refs/ref.fasta",
+        gb="refs/ref.gb"
+    run:
+        acc = open(input.acc).read().strip()
+        shell("python analysis/scripts/fetch_single.py --acc {acc} --out_fasta {output.fa} --out_gb {output.gb}")
 
 rule map_bwa:
     input:
         r1="work/{s}.R1.trim.fastq.gz",
-        r2="work/{s}.R2.trim.fastq.gz"
+        r2="work/{s}.R2.trim.fastq.gz",
+        ref="refs/ref.fasta"
     output:
         bam="work/{s}.sorted.bam"
-    params:
-        ref=lambda w: cfg["ref_accessions"]["recent_2023"]
-    threads: THREADS
+    threads: 4
     shell:
-        "printf '%s\n' {params.ref} > refs/mref.txt && "
-        "python analysis/scripts/fetch_genbank.py --acc refs/mref.txt --out_fasta refs/mref.fasta && "
-        "bwa index refs/mref.fasta && "
-        "bwa mem -t {threads} refs/mref.fasta {input.r1} {input.r2} | samtools sort -@ {threads} -o {output.bam} && "
-        "picard MarkDuplicates I={output.bam} O=work/{wildcards.s}.dedup.bam M=work/{wildcards.s}.dupmetrics.txt VALIDATION_STRINGENCY=SILENT REMOVE_SEQUENCING_DUPLICATES=false && "
-        "samtools index work/{wildcards.s}.dedup.bam"
+        "bwa index {input.ref} && "
+        "bwa mem -t {threads} {input.ref} {input.r1} {input.r2} | samtools sort -@ {threads} -o {output.bam} && "
+        "samtools index {output.bam}"
 
-rule depth_mask_call_consensus:
+rule consensus:
     input:
-        bam="work/{s}.dedup.bam"
+        bam="work/{s}.sorted.bam",
+        ref="refs/ref.fasta"
     output:
-        depth="work/{s}.depth.txt",
+        depth="results/coverage/{s}.depth.txt",
         mask="work/{s}.mask.bed",
-        vcf="work/{s}.variants.vcf.gz",
+        vcf="work/{s}.vcf.gz",
         cons="results/consensus/{s}.fa"
     params:
-        min_dp=cfg["params"]["min_depth_consensus"]
-    threads: THREADS
+        min_dp=MIN_DP
+    threads: 4
     shell:
+        "mkdir -p results/coverage results/consensus && "
         "samtools depth -a {input.bam} > {output.depth} && "
-        "awk -v OFS='\\t' -v MIN={params.min_dp} '{ if ($3<MIN) print $1, $2-1, $2 }' {output.depth} > {output.mask} && "
-        "bcftools mpileup -Ou -f refs/mref.fasta {input.bam} | bcftools call -mv -Oz -o {output.vcf} && bcftools index {output.vcf} && "
-        "bcftools consensus -f refs/mref.fasta -m {output.mask} {output.vcf} > {output.cons}"
+        "awk -v OFS='\\t' -v MIN={params.min_dp} '{{ if ($3<MIN) print $1, $2-1, $2 }}' {output.depth} > {output.mask} && "
+        "bcftools mpileup -Ou -f {input.ref} {input.bam} | bcftools call -mv -Oz -o {output.vcf} && bcftools index {output.vcf} && "
+        "bcftools consensus -f {input.ref} -m {output.mask} {output.vcf} > {output.cons}"
 
 rule combine_consensus:
     input:
@@ -101,6 +206,15 @@ rule combine_consensus:
     shell:
         "cat {input} > {output}"
 
+rule fetch_context:
+    output:
+        "results/refs/context.fasta"
+    run:
+        with open("config/context.txt","w") as f:
+            for acc in cfg.get("context_accessions", []):
+                f.write(acc + "\\n")
+        shell("python analysis/scripts/fetch_genbank.py --acc config/context.txt --out_fasta {output}")
+
 rule align_wg:
     input:
         cons="results/consensus/all_consensus.fasta",
@@ -108,25 +222,7 @@ rule align_wg:
     output:
         "results/aln/wg_alignment.fasta"
     shell:
-        "mkdir -p results/aln && "
-        "cat {input.cons} {input.ctx} > results/aln/wg_input.fasta && "
-        "mafft --auto results/aln/wg_input.fasta > {output}"
-
-rule vp1_extract:
-    input:
-        cons="results/consensus/all_consensus.fasta"
-    output:
-        "results/aln/vp1_input.fasta"
-    shell:
-        "python analysis/scripts/extract_vp1.py --ref_acc D90457.1 --genomes {input.cons} --out_fasta {output}"
-
-rule align_vp1:
-    input:
-        "results/aln/vp1_input.fasta"
-    output:
-        "results/aln/vp1_alignment.fasta"
-    shell:
-        "mafft --auto {input} > {output}"
+        "mkdir -p results/aln && cat {input.cons} {input.ctx} > results/aln/wg_input.fasta && mafft --auto results/aln/wg_input.fasta > {output}"
 
 rule iqtree_wg:
     input:
@@ -134,22 +230,46 @@ rule iqtree_wg:
     output:
         tree="results/iqtree/wg.treefile"
     params:
-        model=cfg["params"]["iqtree_model_wg"],
-        bb=cfg["params"]["bootstrap"]
+        model=WG_MODEL,
+        bb=BOOT,
+        mf=" -m MFP" if MF else ""
     threads: 2
     shell:
-        "mkdir -p results/iqtree && "
-        "iqtree -s {input.aln} -m {params.model} -bb {params.bb} -nt {threads} -pre results/iqtree/wg"
+        "mkdir -p results/iqtree && iqtree -s {input.aln} {params.mf} -m {params.model} -bb {params.bb} -nt {threads} -pre results/iqtree/wg"
+
+rule extract_vp1:
+    input:
+        gb="refs/ref.gb",
+        cons="results/consensus/all_consensus.fasta"
+    output:
+        "results/vp1/vp1_alignment.fasta"
+    shell:
+        "mkdir -p results/vp1 && python analysis/scripts/extract_vp1_by_gb.py --ref_gb {input.gb} --consensus_fa {input.cons} --out_vp1_fa results/vp1/vp1.fasta && "
+        "mafft --auto results/vp1/vp1.fasta > {output}"
 
 rule iqtree_vp1:
     input:
-        aln="results/aln/vp1_alignment.fasta"
+        aln="results/vp1/vp1_alignment.fasta"
     output:
         tree="results/iqtree/vp1.treefile"
     params:
-        model=cfg["params"]["iqtree_model_vp1"],
-        bb=cfg["params"]["bootstrap"]
+        model=VP1_MODEL,
+        bb=BOOT,
+        mf=" -m MFP" if MF else ""
     threads: 2
     shell:
-        "mkdir -p results/iqtree && "
-        "iqtree -s {input.aln} -m {params.model} -bb {params.bb} -nt {threads} -pre results/iqtree/vp1"
+        "mkdir -p results/iqtree && iqtree -s {input.aln} {params.mf} -m {params.model} -bb {params.bb} -nt {threads} -pre results/iqtree/vp1"
+
+rule mut_summary:
+    input:
+        cons="results/consensus/all_consensus.fasta"
+    output:
+        "results/mutations/aa_changes.tsv"
+    run:
+        # fetch prototype and 2005 strains
+        with open("config/pk2005.txt","w") as f:
+            for a in ["AB365074.1","AB365075.1","AB365076.1","AB365077.1","AB365078.1"]:
+                f.write(a + "\\n")
+        shell("python analysis/scripts/fetch_single.py --acc D90457.1 --out_fasta refs/prototype.fasta && "
+              "python analysis/scripts/fetch_genbank.py --acc config/pk2005.txt --out_fasta refs/pk2005.fasta && "
+              "mkdir -p results/mutations && python analysis/scripts/mutation_summary.py --consensus {input.cons} --prototype refs/prototype.fasta --pk2005 refs/pk2005.fasta --out_tsv {output}")

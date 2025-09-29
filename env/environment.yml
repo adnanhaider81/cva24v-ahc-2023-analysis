@@ -1,4 +1,4 @@
-name: cva24-env
+name: cva24v-env
 channels:
   - conda-forge
   - bioconda
@@ -6,19 +6,19 @@ channels:
 dependencies:
   - python=3.11
   - pandas
+  - numpy
   - matplotlib
   - biopython
+  - pyyaml
   - snakemake
   - fastqc=0.11.9
   - trimmomatic=0.39
-  - picard
   - spades=3.15.5
+  - blast
   - bwa
   - samtools
   - bcftools
   - mafft
   - iqtree
-  - clustalw
-  - seqkit
-  - blast
   - entrez-direct
+  - seqkit

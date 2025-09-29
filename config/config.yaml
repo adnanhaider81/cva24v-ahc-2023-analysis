@@ -1,33 +1,36 @@
 pairs:
-  - sample: AHC_001
-    r1: data-private/AHC_001_R1.fastq.gz
-    r2: data-private/AHC_001_R2.fastq.gz
+  - sample: AHC_2023_ISB_01
+    r1: data-private/AHC_2023_ISB_01_R1.fastq.gz
+    r2: data-private/AHC_2023_ISB_01_R2.fastq.gz
 
-ref_accessions:
-  prototype: D90457.1
-  recent_2023: OR361387.1
+discovery:
+  min_len_contig: 300
+  blast_remote: true
+
+reference:
+  fallback_acc: D90457.1
 
 context_accessions:
-  - OR361388.1
-  - OR803779.1
-  - OR361389.1
-  - OR361390.1
-  - KR478685.1
-  - KR399988.1
+  - D90457.1
   - AB365074.1
   - AB365075.1
   - AB365076.1
   - AB365077.1
   - AB365078.1
-  - OR633288.1
-  - PP028462.1
-  - PP028461.1
 
-params:
-  threads: 4
-  trim_adapters: env/TruSeq3-PE.fa
-  min_depth_consensus: 10
-  min_qual: 20
-  iqtree_model_wg: GTR+G+I
-  iqtree_model_vp1: K2+I
+phylogeny:
+  wg_model: GTR+G+I
+  vp1_model: K2P+I
   bootstrap: 1000
+  use_model_finder: false
+  min_depth_consensus: 10
+
+kraken2:
+  enable: true
+  db: /data/db/kraken2/k2_standard_202507
+
+kaiju:
+  enable: true
+  db_fmi: /data/db/kaiju/kaiju_db_nr_euk.fmi
+  nodes: /data/db/kaiju/nodes.dmp
+  names: /data/db/kaiju/names.dmp

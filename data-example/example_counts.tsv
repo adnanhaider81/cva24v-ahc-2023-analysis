@@ -1,4 +1,2 @@
-sample	count
-AHC_001	12345
-AHC_002	6789
-AHC_003	3456
+sample	read_pairs
+AHC_2023_ISB_01	120000
