@@ -130,4 +130,7 @@ snakemake -s workflow/Snakefile -c 4 --config params:iqtree_model_wg=MFP params:
 - The repo includes a script that exports VP1 sequences for upload and a short how-to in docs/STRUCTURE.md.
 
 ## Methods and tool references
-FastQC v0.11.9, Trimmomatic v0.39, Picard MarkDuplicates, SPAdes v3.15.5, BWA, MAFFT, IQ-TREE v2 with 1000 bootstraps, MEGA model selection references K2+I and GTR+G+I, BLAST+, Entrez Direct.
+FastQC v0.11.9, Trimmomatic v0.39, Picard MarkDuplicates, SPAdes v3.15.5, BWA, MAFFT, IQ-TREE with GTR+G and 1000 bootstraps, Nextclade CLI.
+SPAdes: Bankevich A et al., J Comput Biol 2012, 19(5):455-477.
+Geneious: Kearse M et al., Bioinformatics 2012, 28(12):1647-1649.
+IQ-TREE: Nguyen LT et al., Mol Biol Evol 2015, 32(1):268-274.
