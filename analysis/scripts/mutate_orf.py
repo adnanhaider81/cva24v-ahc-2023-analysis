@@ -47,15 +47,13 @@ def main():
     raa = rnt.translate()
 
     with open(args.out_tsv, 'w') as out:
-        out.write('sample	pos	ref_aa	alt_aa
-')
+        out.write('sample\tpos\tref_aa\talt_aa\n')
         for rec in SeqIO.parse(args.genomes, 'fasta'):
             qaa = rec.seq.translate()
             L = min(len(raa), len(qaa))
             for i in range(L):
                 if raa[i] != qaa[i]:
-                    out.write(f'{rec.id}	{i+1}	{raa[i]}	{qaa[i]}
-')
+                    out.write(f'{rec.id}\t{i+1}\t{raa[i]}\t{qaa[i]}\n')
 
 if __name__ == '__main__':
     main()

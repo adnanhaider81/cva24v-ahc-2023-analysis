@@ -4,6 +4,7 @@ Thank you for your interest in improving this analysis.
 
 ## Ground rules
 - Do not commit patient data or restricted datasets.
+- Use synthetic or public example data for tests and documentation.
 - Keep parameters in `config/config.yaml` so runs are reproducible.
 - Match tool versions in `env/environment.yml` where possible.
 
@@ -14,9 +15,9 @@ Thank you for your interest in improving this analysis.
    ```bash
    conda activate cva24v-env
    export NCBI_EMAIL="your@email"
-   snakemake -s workflow/Snakefile -n -c 4
+   make dry
    ```
-4. Verify `make test` works.
+4. Verify `make smoke` works.
 5. Open a pull request describing the change and any parameter updates.
 
 ## Code style

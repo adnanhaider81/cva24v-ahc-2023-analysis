@@ -9,6 +9,7 @@ ap.add_argument('--max_hits', type=int, default=5)
 a = ap.parse_args()
 cmd = ['blastn', '-query', a.contigs, '-outfmt', '6 qseqid sacc pident length evalue bitscore staxids sscinames sskingdoms']
 cmd += ['-remote', '-db', 'nt'] if a.remote else ['-db', a.db]
+cmd += ['-max_target_seqs', str(a.max_hits)]
 res = subprocess.run(cmd, capture_output=True, text=True, check=True)
 lines = [l for l in res.stdout.strip().splitlines() if l.strip()]
 rows = {}

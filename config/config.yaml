@@ -1,7 +1,7 @@
 pairs:
-  - sample: AHC_2023_ISB_01
-    r1: data-private/AHC_2023_ISB_01_R1.fastq.gz
-    r2: data-private/AHC_2023_ISB_01_R2.fastq.gz
+  - sample: CVA24V_DEMO_01
+    r1: data-example/fastq/CVA24V_DEMO_01_R1.fastq
+    r2: data-example/fastq/CVA24V_DEMO_01_R2.fastq
 
 discovery:
   min_len_contig: 300
@@ -26,11 +26,11 @@ phylogeny:
   min_depth_consensus: 10
 
 kraken2:
-  enable: true
+  enable: false
   db: /data/db/kraken2/k2_standard_202507
 
 kaiju:
-  enable: true
+  enable: false
   db_fmi: /data/db/kaiju/kaiju_db_nr_euk.fmi
   nodes: /data/db/kaiju/nodes.dmp
   names: /data/db/kaiju/names.dmp

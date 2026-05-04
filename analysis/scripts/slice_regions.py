@@ -55,9 +55,7 @@ def slice_and_write(ref_seq, q_seq, s, e, strand, out_path, qid):
     if strand == -1:
         frag = frag.reverse_complement()
     with open(out_path, 'w') as out:
-        out.write(f">{qid}
-{frag}
-")
+        out.write(f">{qid}\n{frag}\n")
     return True
 
 def main():

@@ -1,12 +1,17 @@
 # CV-A24v AHC 2023 Pakistan - Snakemake pipeline
 
 import yaml, os
-cfg = yaml.safe_load(open("config/config.yaml"))
+cfg = yaml.safe_load(open("config/config.yaml")) or {}
+PYTHON = cfg.get("runtime", {}).get("python", "python3")
 
-SAMPLES = [x.get("sample","AHC_2023_ISB_01") for x in cfg.get("pairs", [{"sample":"AHC_2023_ISB_01","r1":"data-private/AHC_2023_ISB_01_R1.fastq.gz","r2":"data-private/AHC_2023_ISB_01_R2.fastq.gz"}])]
-META = {x.get("sample","AHC_2023_ISB_01"): x for x in cfg.get("pairs", [])}
-if not META:
-    META = {"AHC_2023_ISB_01": {"r1":"data-private/AHC_2023_ISB_01_R1.fastq.gz","r2":"data-private/AHC_2023_ISB_01_R2.fastq.gz"}}
+DEFAULT_PAIR = {
+    "sample": "CVA24V_DEMO_01",
+    "r1": "data-example/fastq/CVA24V_DEMO_01_R1.fastq",
+    "r2": "data-example/fastq/CVA24V_DEMO_01_R2.fastq",
+}
+PAIRS = cfg.get("pairs") or [DEFAULT_PAIR]
+SAMPLES = [x.get("sample", DEFAULT_PAIR["sample"]) for x in PAIRS]
+META = {x.get("sample", DEFAULT_PAIR["sample"]): x for x in PAIRS}
 
 THREADS =  cfg.get("phylogeny",{}).get("threads", 4)
 MINLEN =   cfg.get("discovery",{}).get("min_len_contig", 300)
@@ -18,16 +23,20 @@ MF =       cfg.get("phylogeny",{}).get("use_model_finder", False)
 BLAST_REMOTE = cfg.get("discovery",{}).get("blast_remote", True)
 
 KRAKEN_EN = cfg.get("kraken2", {}).get("enable", True)
+KRAKEN_FLAG = 1 if KRAKEN_EN else 0
 KRAKEN_DB = cfg.get("kraken2", {}).get("db", "/path/to/kraken2-db")
 KAIJU_EN   = cfg.get("kaiju", {}).get("enable", True)
+KAIJU_FLAG = 1 if KAIJU_EN else 0
 KAIJU_FMI  = cfg.get("kaiju", {}).get("db_fmi", "/path/to/kaiju_db.fmi")
 KAIJU_NODES= cfg.get("kaiju", {}).get("nodes", "/path/to/nodes.dmp")
 KAIJU_NAMES= cfg.get("kaiju", {}).get("names", "/path/to/names.dmp")
 
 rule all:
     input:
+        expand("work/{s}.fastqc.done", s=SAMPLES),
         expand("results/discovery/{s}_taxonomy_summary.tsv", s=SAMPLES),
         expand("results/discovery/{s}_selected_targets.yaml", s=SAMPLES),
+        expand("results/spades/{s}/contigs.qc.tsv", s=SAMPLES),
         expand("results/consensus/{s}.fa", s=SAMPLES),
         "results/consensus/all_consensus.fasta",
         "results/aln/wg_alignment.fasta",
@@ -41,10 +50,10 @@ rule fastqc:
         r1=lambda w: META[w.s]["r1"],
         r2=lambda w: META[w.s]["r2"]
     output:
-        "work/{s}.R1.fastqc.html",
-        "work/{s}.R2.fastqc.html"
+        "work/{s}.fastqc.done"
     shell:
-        "fastqc -o work {input.r1} {input.r2}"
+        "mkdir -p work logs && fastqc -o work {input.r1} {input.r2} "
+        "> logs/{wildcards.s}.fastqc.log 2>&1 && touch {output}"
 
 rule trim:
     input:
@@ -57,6 +66,7 @@ rule trim:
         adapters="env/TruSeq3-PE.fa"
     threads: 4
     shell:
+        "mkdir -p work logs && "
         "trimmomatic PE -threads {threads} {input.r1} {input.r2} "
         "{output.r1} /dev/null {output.r2} /dev/null "
         "ILLUMINACLIP:{params.adapters}:2:30:10 LEADING:3 TRAILING:3 SLIDINGWINDOW:4:30 MINLEN:50"
@@ -69,7 +79,7 @@ rule spades:
         contigs="results/spades/{s}/contigs.fasta"
     threads: 4
     shell:
-        "mkdir -p results/spades/{wildcards.s} && "
+        "mkdir -p results/spades/{wildcards.s} logs && "
         "spades.py -1 {input.r1} -2 {input.r2} -t {threads} -o results/spades/{wildcards.s} > logs/{wildcards.s}.spades.log 2>&1 && "
         "test -f results/spades/{wildcards.s}/contigs.fasta || touch {output.contigs}"
 
@@ -81,7 +91,7 @@ rule contig_qc:
     params:
         minlen=MINLEN
     shell:
-        "python analysis/scripts/contig_qc.py --in {input} --min_len {params.minlen} --out_tsv {output}"
+        "{PYTHON} analysis/scripts/contig_qc.py --in {input} --min_len {params.minlen} --out_tsv {output}"
 
 rule kraken2_reads:
     input:
@@ -90,10 +100,13 @@ rule kraken2_reads:
     output:
         rep="results/discovery/kraken2/{s}.reads.report.txt",
         out="results/discovery/kraken2/{s}.reads.kraken.tsv"
+    params:
+        enabled=KRAKEN_FLAG,
+        db=KRAKEN_DB
     threads: 4
     shell:
-        "if {int(KRAKEN_EN)}; then mkdir -p results/discovery/kraken2 && "
-        "kraken2 --db {KRAKEN_DB} --threads {threads} --paired {input.r1} {input.r2} "
+        "if [ {params.enabled} -eq 1 ]; then mkdir -p results/discovery/kraken2 && "
+        "kraken2 --db {params.db} --threads {threads} --paired {input.r1} {input.r2} "
         "--report {output.rep} --output {output.out}; "
         "else mkdir -p results/discovery/kraken2 && echo 'disabled' > {output.rep} && echo '' > {output.out}; fi"
 
@@ -103,10 +116,13 @@ rule kraken2_contigs:
     output:
         rep="results/discovery/kraken2/{s}.contigs.report.txt",
         out="results/discovery/kraken2/{s}.contigs.kraken.tsv"
+    params:
+        enabled=KRAKEN_FLAG,
+        db=KRAKEN_DB
     threads: 4
     shell:
-        "if {int(KRAKEN_EN)}; then mkdir -p results/discovery/kraken2 && "
-        "kraken2 --db {KRAKEN_DB} --threads {threads} {input.contigs} "
+        "if [ {params.enabled} -eq 1 ]; then mkdir -p results/discovery/kraken2 && "
+        "kraken2 --db {params.db} --threads {threads} {input.contigs} "
         "--report {output.rep} --output {output.out}; "
         "else mkdir -p results/discovery/kraken2 && echo 'disabled' > {output.rep} && echo '' > {output.out}; fi"
 
@@ -116,11 +132,16 @@ rule kaiju_contigs:
     output:
         out="results/discovery/kaiju/{s}.kaiju.out",
         rep="results/discovery/kaiju/{s}.kaiju.report.tsv"
+    params:
+        enabled=KAIJU_FLAG,
+        db_fmi=KAIJU_FMI,
+        nodes=KAIJU_NODES,
+        names=KAIJU_NAMES
     threads: 4
     shell:
-        "if {int(KAIJU_EN)}; then mkdir -p results/discovery/kaiju && "
-        "kaiju -t {KAIJU_NODES} -f {KAIJU_FMI} -i {input.contigs} -z {threads} -a greedy -e 5 -E 0.0001 -s 65 -o {output.out} && "
-        "kaiju2table -t {KAIJU_NODES} -n {KAIJU_NAMES} -r species -o {output.rep} {output.out}; "
+        "if [ {params.enabled} -eq 1 ]; then mkdir -p results/discovery/kaiju && "
+        "kaiju -t {params.nodes} -f {params.db_fmi} -i {input.contigs} -z {threads} -a greedy -e 5 -E 0.0001 -s 65 -o {output.out} && "
+        "kaiju2table -t {params.nodes} -n {params.names} -r species -o {output.rep} {output.out}; "
         "else mkdir -p results/discovery/kaiju && echo 'disabled' > {output.out} && echo '' > {output.rep}; fi"
 
 rule blast_top_hits:
@@ -133,7 +154,7 @@ rule blast_top_hits:
         db="nt"
     shell:
         "mkdir -p results/discovery && "
-        "python analysis/scripts/blast_top_hits.py --contigs {input.contigs} --out_tsv {output} {params.remote} --db {params.db}"
+        "{PYTHON} analysis/scripts/blast_top_hits.py --contigs {input.contigs} --out_tsv {output} {params.remote} --db {params.db}"
 
 rule taxonomy_summary:
     input:
@@ -144,7 +165,7 @@ rule taxonomy_summary:
         tsv="results/discovery/{s}_taxonomy_summary.tsv",
         targ="results/discovery/{s}_selected_targets.yaml"
     shell:
-        "python analysis/scripts/taxonomy_summary.py --k2_reads {input.k2r} --k2_contigs {input.k2c} --kaiju {input.kj} --out_tsv {output.tsv} --out_targets {output.targ}"
+        "{PYTHON} analysis/scripts/taxonomy_summary.py --k2_reads {input.k2r} --k2_contigs {input.k2c} --kaiju {input.kj} --out_tsv {output.tsv} --out_targets {output.targ}"
 
 rule select_reference:
     input:
@@ -154,23 +175,23 @@ rule select_reference:
     params:
         fallback=cfg.get("reference",{}).get("fallback_acc","D90457.1")
     shell:
-        "mkdir -p results/refs && python analysis/scripts/select_reference.py --blast_tsv {input.blast} --fallback {params.fallback} --out_acc {output.acc}"
+        "mkdir -p results/refs && {PYTHON} analysis/scripts/select_reference.py --blast_tsv {input.blast} --fallback {params.fallback} --out_acc {output.acc}"
 
 rule fetch_reference_and_gb:
     input:
         acc="results/refs/{s}.selected_ref.txt"
     output:
-        fa="refs/ref.fasta",
-        gb="refs/ref.gb"
+        fa="refs/{s}.ref.fasta",
+        gb="refs/{s}.ref.gb"
     run:
         acc = open(input.acc).read().strip()
-        shell("python analysis/scripts/fetch_single.py --acc {acc} --out_fasta {output.fa} --out_gb {output.gb}")
+        shell("mkdir -p refs && {PYTHON} analysis/scripts/fetch_single.py --acc {acc} --out_fasta {output.fa} --out_gb {output.gb}")
 
 rule map_bwa:
     input:
         r1="work/{s}.R1.trim.fastq.gz",
         r2="work/{s}.R2.trim.fastq.gz",
-        ref="refs/ref.fasta"
+        ref="refs/{s}.ref.fasta"
     output:
         bam="work/{s}.sorted.bam"
     threads: 4
@@ -182,7 +203,7 @@ rule map_bwa:
 rule consensus:
     input:
         bam="work/{s}.sorted.bam",
-        ref="refs/ref.fasta"
+        ref="refs/{s}.ref.fasta"
     output:
         depth="results/coverage/{s}.depth.txt",
         mask="work/{s}.mask.bed",
@@ -210,10 +231,11 @@ rule fetch_context:
     output:
         "results/refs/context.fasta"
     run:
+        os.makedirs("config", exist_ok=True)
         with open("config/context.txt","w") as f:
             for acc in cfg.get("context_accessions", []):
                 f.write(acc + "\\n")
-        shell("python analysis/scripts/fetch_genbank.py --acc config/context.txt --out_fasta {output}")
+        shell("mkdir -p results/refs && {PYTHON} analysis/scripts/fetch_genbank.py --acc config/context.txt --out_fasta {output}")
 
 rule align_wg:
     input:
@@ -239,12 +261,12 @@ rule iqtree_wg:
 
 rule extract_vp1:
     input:
-        gb="refs/ref.gb",
+        gb=f"refs/{SAMPLES[0]}.ref.gb",
         cons="results/consensus/all_consensus.fasta"
     output:
         "results/vp1/vp1_alignment.fasta"
     shell:
-        "mkdir -p results/vp1 && python analysis/scripts/extract_vp1_by_gb.py --ref_gb {input.gb} --consensus_fa {input.cons} --out_vp1_fa results/vp1/vp1.fasta && "
+        "mkdir -p results/vp1 && {PYTHON} analysis/scripts/extract_vp1_by_gb.py --ref_gb {input.gb} --consensus_fa {input.cons} --out_vp1_fa results/vp1/vp1.fasta && "
         "mafft --auto results/vp1/vp1.fasta > {output}"
 
 rule iqtree_vp1:
@@ -266,10 +288,11 @@ rule mut_summary:
     output:
         "results/mutations/aa_changes.tsv"
     run:
-        # fetch prototype and 2005 strains
+        os.makedirs("config", exist_ok=True)
         with open("config/pk2005.txt","w") as f:
             for a in ["AB365074.1","AB365075.1","AB365076.1","AB365077.1","AB365078.1"]:
                 f.write(a + "\\n")
-        shell("python analysis/scripts/fetch_single.py --acc D90457.1 --out_fasta refs/prototype.fasta && "
-              "python analysis/scripts/fetch_genbank.py --acc config/pk2005.txt --out_fasta refs/pk2005.fasta && "
-              "mkdir -p results/mutations && python analysis/scripts/mutation_summary.py --consensus {input.cons} --prototype refs/prototype.fasta --pk2005 refs/pk2005.fasta --out_tsv {output}")
+        shell("mkdir -p refs results/mutations && "
+              "{PYTHON} analysis/scripts/fetch_single.py --acc D90457.1 --out_fasta refs/prototype.fasta && "
+              "{PYTHON} analysis/scripts/fetch_genbank.py --acc config/pk2005.txt --out_fasta refs/pk2005.fasta && "
+              "{PYTHON} analysis/scripts/mutation_summary.py --consensus {input.cons} --prototype refs/prototype.fasta --pk2005 refs/pk2005.fasta --out_tsv {output}")
