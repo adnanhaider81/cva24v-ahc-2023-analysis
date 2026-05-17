@@ -19,6 +19,35 @@ Current software release: `2.0.1`
 
 No patient reads or restricted outbreak data are included.
 
+## Portfolio quick view
+
+This repository documents a metagenomic-to-targeted workflow for CV-A24v outbreak analysis: discovery screening, contig QC, reference selection, consensus generation, whole-genome and VP1 phylogeny, and amino-acid difference summaries. The default configuration uses synthetic inputs so the workflow structure can be reviewed without private outbreak data.
+
+```mermaid
+flowchart LR
+  A["Metagenomic FASTQ"] --> B["QC and trimming"]
+  B --> C["Assembly and taxonomy screening"]
+  C --> D["CV-A24v reference selection"]
+  D --> E["Read mapping"]
+  E --> F["Masked consensus"]
+  F --> G["VP1 and whole-genome trees"]
+  F --> H["Mutation summary"]
+```
+
+## Public repository checklist
+
+| Item | Status |
+| --- | --- |
+| README, license, citation metadata | Present |
+| Reproducible environment | `env/environment.yml` and `env/requirements.txt` |
+| Tests or smoke checks | `tests/`, `make smoke`, and `make dry` |
+| Example or synthetic data | `data-example/` |
+| Documentation | `docs/` plus README |
+| Data privacy note | Present; no patient reads or restricted outbreak data are included |
+| GitHub Actions badge | Present |
+| Container recipe | Planned |
+| Zenodo DOI | Planned for archived stable release |
+
 ## Workflow Summary
 
 1. Run read QC with FastQC and paired-end trimming with Trimmomatic.
