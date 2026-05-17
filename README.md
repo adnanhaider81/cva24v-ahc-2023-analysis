@@ -1,11 +1,11 @@
-# CV-A24v AHC 2023 Pakistan Analysis
+# Coxsackievirus A24 Variant Outbreak Genomics, Islamabad 2023
 
 [![DOI](https://zenodo.org/badge/1065981765.svg)](https://zenodo.org/badge/latestdoi/1065981765)
 [![Smoke test](https://github.com/adnanhaider81/cva24v-ahc-2023-analysis/actions/workflows/smoke-test.yml/badge.svg)](https://github.com/adnanhaider81/cva24v-ahc-2023-analysis/actions/workflows/smoke-test.yml)
 
 Snakemake workflow for pathogen-discovery screening and targeted Coxsackievirus A24 variant (CV-A24v) analysis from metagenomic paired-end RNA sequencing libraries.
 
-This repository accompanies the Journal of Virological Methods paper:
+Published paper:
 
 Haider SA, Jamal Z, Ammar M, Hakim R, Afrough B, Kreku A, Inamdar L, Salman M, Umair M. Genomic characterization of the Coxsackievirus A24 variant in the Acute Hemorrhagic Conjunctivitis outbreak 2023 in Islamabad, Pakistan through metagenomic next generation sequencing. Journal of Virological Methods. 2025. https://doi.org/10.1016/j.jviromet.2025.115213
 
@@ -22,7 +22,7 @@ Current software release: `2.0.3`
 
 No patient reads or restricted outbreak data are included.
 
-## Portfolio quick view
+## Workflow overview
 
 This repository documents a metagenomic-to-targeted workflow for CV-A24v outbreak analysis: discovery screening, contig QC, reference selection, consensus generation, whole-genome and VP1 phylogeny, and amino-acid difference summaries. The default configuration uses synthetic inputs so the workflow structure can be reviewed without private outbreak data.
 
@@ -36,20 +36,6 @@ flowchart LR
   F --> G["VP1 and whole-genome trees"]
   F --> H["Mutation summary"]
 ```
-
-## Public repository checklist
-
-| Item | Status |
-| --- | --- |
-| README, license, citation metadata | Present |
-| Reproducible environment | `env/environment.yml` and `env/requirements.txt` |
-| Tests or smoke checks | `tests/`, `make smoke`, and `make dry` |
-| Example or synthetic data | `data-example/` |
-| Documentation | `docs/` plus README |
-| Data privacy note | Present; no patient reads or restricted outbreak data are included |
-| GitHub Actions badge | Present |
-| Container recipe | `Dockerfile` |
-| Zenodo DOI | [10.5281/zenodo.20257884](https://doi.org/10.5281/zenodo.20257884) |
 
 ## Workflow Summary
 
