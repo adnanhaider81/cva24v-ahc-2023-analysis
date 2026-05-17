@@ -4,9 +4,12 @@ title: CV-A24v AHC 2023 Pakistan analysis pipeline
 authors:
   - family-names: Haider
     given-names: Syed Adnan
-version: 2.0.1
-date-released: 2026-05-04
+version: 2.0.2
+date-released: 2026-05-17
+type: software
+abstract: "A Snakemake workflow for pathogen-discovery screening and targeted Coxsackievirus A24 variant analysis from metagenomic paired-end RNA sequencing libraries, with synthetic demo inputs, smoke tests, consensus generation, phylogeny, and mutation summaries."
 repository-code: "https://github.com/adnanhaider81/cva24v-ahc-2023-analysis"
+license: MIT
 preferred-citation:
   type: article
   title: Genomic characterization of the Coxsackievirus A24 variant in the Acute Hemorrhagic Conjunctivitis outbreak (2023) in Islamabad, Pakistan through metagenomic next generation sequencing
