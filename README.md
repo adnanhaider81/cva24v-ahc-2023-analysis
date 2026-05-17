@@ -1,5 +1,7 @@
 # CV-A24v AHC 2023 Pakistan Analysis
 
+[![DOI](https://zenodo.org/badge/1065981765.svg)](https://zenodo.org/badge/latestdoi/1065981765)
+
 Snakemake workflow for pathogen-discovery screening and targeted Coxsackievirus A24 variant (CV-A24v) analysis from metagenomic paired-end RNA sequencing libraries.
 
 This repository accompanies the Journal of Virological Methods paper:
@@ -46,7 +48,7 @@ flowchart LR
 | Data privacy note | Present; no patient reads or restricted outbreak data are included |
 | GitHub Actions badge | Present |
 | Container recipe | Planned |
-| Zenodo DOI | Pending Zenodo archive for `v2.0.2` |
+| Zenodo DOI | [10.5281/zenodo.20257437](https://doi.org/10.5281/zenodo.20257437) |
 
 ## Workflow Summary
 
@@ -145,7 +147,8 @@ The tracked example data are synthetic and are intended only for testing reposit
 ## Citation
 
 - Paper: https://doi.org/10.1016/j.jviromet.2025.115213
-- Software: Haider SA. CV-A24v AHC 2023 Pakistan analysis pipeline. Version 2.0.2. https://github.com/adnanhaider81/cva24v-ahc-2023-analysis
+- Software: Haider SA. CV-A24v AHC 2023 Pakistan analysis pipeline. Version 2.0.2. Zenodo. https://doi.org/10.5281/zenodo.20257437
+- All-version software DOI: https://doi.org/10.5281/zenodo.20257436
 
 ## Key References
 
