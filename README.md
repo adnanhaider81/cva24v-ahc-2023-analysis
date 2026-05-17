@@ -9,7 +9,7 @@ This repository accompanies the Journal of Virological Methods paper:
 
 Haider SA, Jamal Z, Ammar M, Hakim R, Afrough B, Kreku A, Inamdar L, Salman M, Umair M. Genomic characterization of the Coxsackievirus A24 variant in the Acute Hemorrhagic Conjunctivitis outbreak 2023 in Islamabad, Pakistan through metagenomic next generation sequencing. Journal of Virological Methods. 2025. https://doi.org/10.1016/j.jviromet.2025.115213
 
-Current software release: `2.0.2`
+Current software release: `2.0.3`
 
 ## Repository Contents
 
@@ -49,7 +49,7 @@ flowchart LR
 | Data privacy note | Present; no patient reads or restricted outbreak data are included |
 | GitHub Actions badge | Present |
 | Container recipe | `Dockerfile` |
-| Zenodo DOI | [10.5281/zenodo.20257437](https://doi.org/10.5281/zenodo.20257437) |
+| Zenodo DOI | Pending Zenodo archive for `v2.0.3` |
 
 ## Workflow Summary
 
@@ -148,7 +148,7 @@ The tracked example data are synthetic and are intended only for testing reposit
 ## Citation
 
 - Paper: https://doi.org/10.1016/j.jviromet.2025.115213
-- Software: Haider SA. CV-A24v AHC 2023 Pakistan analysis pipeline. Version 2.0.2. Zenodo. https://doi.org/10.5281/zenodo.20257437
+- Software: Haider SA. CV-A24v AHC 2023 Pakistan analysis pipeline. Version 2.0.3. Zenodo release DOI pending.
 - All-version software DOI: https://doi.org/10.5281/zenodo.20257436
 
 ## Key References
