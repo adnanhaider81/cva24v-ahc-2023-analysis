@@ -1,6 +1,7 @@
 # CV-A24v AHC 2023 Pakistan Analysis
 
 [![DOI](https://zenodo.org/badge/1065981765.svg)](https://zenodo.org/badge/latestdoi/1065981765)
+[![Smoke test](https://github.com/adnanhaider81/cva24v-ahc-2023-analysis/actions/workflows/smoke-test.yml/badge.svg)](https://github.com/adnanhaider81/cva24v-ahc-2023-analysis/actions/workflows/smoke-test.yml)
 
 Snakemake workflow for pathogen-discovery screening and targeted Coxsackievirus A24 variant (CV-A24v) analysis from metagenomic paired-end RNA sequencing libraries.
 
@@ -47,7 +48,7 @@ flowchart LR
 | Documentation | `docs/` plus README |
 | Data privacy note | Present; no patient reads or restricted outbreak data are included |
 | GitHub Actions badge | Present |
-| Container recipe | Planned |
+| Container recipe | `Dockerfile` |
 | Zenodo DOI | [10.5281/zenodo.20257437](https://doi.org/10.5281/zenodo.20257437) |
 
 ## Workflow Summary
