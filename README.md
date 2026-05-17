@@ -134,7 +134,7 @@ The tracked example data are synthetic and are intended only for testing reposit
 ## Citation
 
 - Paper: https://doi.org/10.1016/j.jviromet.2025.115213
-- Software: Haider SA. CV-A24v AHC 2023 Pakistan analysis pipeline. Version 2.0.3. Zenodo. https://doi.org/10.5281/zenodo.20257884
+- Software: Haider SA. Coxsackievirus A24 Variant Outbreak Genomics, Islamabad 2023. Version 2.0.3. Zenodo. https://doi.org/10.5281/zenodo.20257884
 - All-version software DOI: https://doi.org/10.5281/zenodo.20257436
 
 ## Key References
