@@ -131,6 +131,10 @@ Kraken2 and Kaiju are disabled in the default synthetic configuration because th
 
 The tracked example data are synthetic and are intended only for testing repository setup. Do not commit patient reads, raw outbreak data, local database files, BAM/VCF outputs, or private metadata. The `.gitignore` file excludes common generated and private paths.
 
+## Data governance
+
+See [DATA_GOVERNANCE.md](DATA_GOVERNANCE.md) for public-data, restricted-data, and sample-identifier handling rules.
+
 ## Citation
 
 - Paper: https://doi.org/10.1016/j.jviromet.2025.115213
