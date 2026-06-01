@@ -11,6 +11,21 @@ Haider SA, Jamal Z, Ammar M, Hakim R, Afrough B, Kreku A, Inamdar L, Salman M, U
 
 Current software release: `2.0.3`
 
+## Abbreviations
+
+| Term | Meaning |
+| --- | --- |
+| CV-A24v | Coxsackievirus A24 variant |
+| AHC | Acute hemorrhagic conjunctivitis |
+| VP1 | Viral protein 1 |
+| NGS | Next-generation sequencing |
+| SPAdes | Genome assembler used for contig generation |
+| BLAST | Basic Local Alignment Search Tool |
+| BWA | Burrows-Wheeler Aligner for read mapping |
+| MAFFT | Multiple-sequence alignment program |
+| IQ-TREE | Maximum-likelihood phylogenetic tree program |
+| QC | Quality control |
+
 ## Repository Contents
 
 - `workflow/Snakefile`: main Snakemake workflow.
