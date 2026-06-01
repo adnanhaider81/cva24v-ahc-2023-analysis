@@ -131,6 +131,16 @@ Kraken2 and Kaiju are disabled in the default synthetic configuration because th
 
 The tracked example data are synthetic and are intended only for testing repository setup. Do not commit patient reads, raw outbreak data, local database files, BAM/VCF outputs, or private metadata. The `.gitignore` file excludes common generated and private paths.
 
+## Apptainer/Singularity container
+
+An HPC-friendly container recipe is provided at `containers/Apptainer.def`. Build it from the repository root:
+
+```bash
+apptainer build containers/cva24v-ahc-2023-analysis.sif containers/Apptainer.def
+```
+
+Use the image on systems where Apptainer or Singularity is preferred over Docker.
+
 ## Data governance
 
 See [DATA_GOVERNANCE.md](DATA_GOVERNANCE.md) for public-data, restricted-data, and sample-identifier handling rules.
